@@ -1,69 +1,44 @@
+const https = require('https');
 const fs = require('fs');
-const request = require('request');
-const registryAuthToken = require('registry-auth-token');
 
-// Set the package name and the major version you are interested in
-const packageName = 'umi';
-const majorVersion = 3;
+// Name of the NPM package to retrieve release information for
+const packageName = 'axios';
 
-// Get the user's authentication token for the npm registry
-const authToken = registryAuthToken('https://registry.npmjs.org/', { recursive: true });
+// GitHub API endpoint for retrieving releases
+const endpoint = `https://api.github.com/repos/npm/${packageName}/releases`;
 
-// Construct the URL for the package's metadata
-const metadataUrl = `https://registry.npmjs.org/${packageName}`;
+// GitHub API headers with authentication token
+const headers = {
+  'User-Agent': 'node.js',
+  'Authorization': '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',
+};
 
-// Send a request to the npm registry to get the package's metadata
-request({
-  url: metadataUrl,
-  json: true,
-  auth: {
-    bearer: authToken.token
-  }
-}, (err, res, body) => {
-  if (err) {
-    console.error(err);
-  } else if (res.statusCode !== 200) {
-    console.error(`Unexpected status code: ${res.statusCode}`);
-  } else {
-    // Find the release notes for the major version
-    const versions = Object.keys(body.versions).sort((a, b) => {
-      // Compare two semver version strings and return -1, 0, or 1 depending on their order
-      const versionCompare = (x, y) => {
-        const [xMajor, xMinor, xPatch] = x.split('.');
-        const [yMajor, yMinor, yPatch] = y.split('.');
-        if (xMajor > yMajor) {
-          return 1;
-        } else if (xMajor < yMajor) {
-          return -1;
-        } else if (xMinor > yMinor) {
-          return 1;
-        } else if (xMinor < yMinor) {
-          return -1;
-        } else if (xPatch > yPatch) {
-          return 1;
-        } else if (xPatch < yPatch) {
-          return -1;
-        } else {
-          return 0;
-        }
-      };
-      return versionCompare(a, b);
-    }).reverse();
-    for (const version of versions) {
-      const [major, minor, patch] = version.split('.');
-      if (major === majorVersion.toString()) {
-        const releaseNotes = body.versions[version].dist.tarball;
-        const fileName = `${packageName}-v${version}-release-notes.txt`;
-        fs.writeFile(fileName, releaseNotes, (err) => {
-          if (err) {
-            console.error(`Error writing release notes to ${fileName}: ${err.message}`);
-          } else {
-            console.log(`Release notes for version ${version} written to ${fileName}`);
-          }
-        });
+https.get(endpoint, { headers }, (res) => {
+  let data = '';
+
+  res.on('data', (chunk) => {
+    data += chunk;
+  });
+
+  res.on('end', () => {
+    const releases = JSON.parse(data);
+    console.log('releases:', releases)
+    const latestRelease = releases[0];
+
+    // Get the release notes for the latest major version
+    const majorVersion = parseInt(latestRelease.tag_name.split('.')[0]);
+    const majorReleaseNotes = latestRelease.body.split(`# ${majorVersion}.`)[1].trim();
+
+    // Write the release notes to a text file
+    const fileName = `release-notes-${packageName}.txt`;
+    fs.writeFile(fileName, majorReleaseNotes, (err) => {
+      if (err) {
+        console.error(err);
         return;
       }
-    }
-    console.error(`Major version ${majorVersion} not found`);
-  }
+      console.log(`Release notes for major version ${majorVersion} of ${packageName} written to file ${fileName}`);
+    });
+  });
+}).on('error', (err) => {
+  console.error(err);
 });

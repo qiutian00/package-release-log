@@ -19,7 +19,6 @@
   "author": "qiutian00",
   "license": "MIT",
   "dependencies": {
-    "registry-auth-token": "^5.0.1",
-    "request": "^2.88.2"
+    "https": "^1.0.0"
   }
 }
