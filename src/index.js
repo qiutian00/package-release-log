@@ -1,12 +1,13 @@
 const fetch = require('cross-fetch');
 const fs = require('fs');
 
-const owner = 'umijs';
-const repo = 'umi';
-const startVersion = 'v3.5';
+// const owner = 'umijs';
+// const repo = 'umi';
+// const startVersion = 'v3.5';
+let owner, repo, startVersion;
 
 async function getMajorReleases(packageName) {
-  const url = `https://api.github.com/repos/${owner}/${repo}/releases?per_page=100`;
+  const url = `https://api.github.com/repos/${owner}/${repo}/releases?per_page=1000`;
   const response = await fetch(url);
   const data = await response.json();
   const majorReleases = data.filter((release) => {
@@ -42,6 +43,26 @@ async function writeReleaseLog(packageName, filePath) {
   }
 }
 
+const readline = require('readline');
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+rl.question('Please Enter owner：', (answer) => {
+  owner = answer;
+  rl.question('Please Enter repo：', (answer) => {
+    repo = answer;
+    rl.question('Please Enter startVersion：', (answer) => {
+      startVersion = answer;
+      console.log(`owner: ${owner}, repo: ${repo}, startVersion: ${startVersion}`);
+      rl.close();
+      console.log('Get release info ...')
+      const filePath = `${repo}-${startVersion}-releases.md`;
+      writeReleaseLog(repo, filePath);
+    });
+  });
+});
 // const packageName = 'react';
-const filePath = `${repo}-${startVersion}-releases.md`;
-writeReleaseLog(repo, filePath);
+
