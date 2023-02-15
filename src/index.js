@@ -31,7 +31,16 @@ async function writeReleaseLog(packageName, filePath) {
       const changelogUrl = release.html_url;
       return `## ${tagName} - ${publishedAt} - ${changelogUrl} \n${release.body}`;
     }).join('\n');
-    fs.writeFile(filePath, logData, { encoding: 'utf8' }, (err) => {
+
+    const logPath = './release-log'
+    if (!fs.existsSync(logPath)) {
+      console.log('log目录不存在，需要创建')
+      fs.mkdirSync(logPath)
+      console.log('log目录创建成功')
+    } else {
+      console.log('log目录已存在')
+    }
+    fs.writeFile(`${logPath}/${filePath}`, logData, { encoding: 'utf8' }, (err) => {
       if (err) {
         console.error(err);
       } else {
