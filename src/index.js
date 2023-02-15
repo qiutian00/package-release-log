@@ -1,44 +1,47 @@
-const https = require('https');
+const fetch = require('cross-fetch');
 const fs = require('fs');
 
-// Name of the NPM package to retrieve release information for
-const packageName = 'axios';
+const owner = 'facebook';
+const repo = 'react';
+const startVersion = 'v18';
 
-// GitHub API endpoint for retrieving releases
-const endpoint = `https://api.github.com/repos/npm/${packageName}/releases`;
-
-// GitHub API headers with authentication token
-const headers = {
-  'User-Agent': 'node.js',
-  'Authorization': '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',
-};
-
-https.get(endpoint, { headers }, (res) => {
-  let data = '';
-
-  res.on('data', (chunk) => {
-    data += chunk;
+async function getMajorReleases(packageName) {
+  const url = `https://api.github.com/repos/${owner}/${repo}/releases?per_page=100`;
+  const response = await fetch(url);
+  const data = await response.json();
+  const majorReleases = data.filter((release) => {
+    // console.log('release:', release);
+    const tagName = release.tag_name;
+    return tagName.startsWith(startVersion);
   });
+  return majorReleases;
+}
 
-  res.on('end', () => {
-    const releases = JSON.parse(data);
-    console.log('releases:', releases)
-    const latestRelease = releases[0];
-
-    // Get the release notes for the latest major version
-    const majorVersion = parseInt(latestRelease.tag_name.split('.')[0]);
-    const majorReleaseNotes = latestRelease.body.split(`# ${majorVersion}.`)[1].trim();
-
-    // Write the release notes to a text file
-    const fileName = `release-notes-${packageName}.txt`;
-    fs.writeFile(fileName, majorReleaseNotes, (err) => {
+async function writeReleaseLog(packageName, filePath) {
+  try {
+    const majorReleases = await getMajorReleases(packageName);
+    if (majorReleases.length === 0) {
+      console.log('No major releases found for package:', packageName);
+      return;
+    }
+    const logData = majorReleases.map((release) => {
+      const tagName = release.tag_name;
+      const publishedAt = release.published_at;
+      const changelogUrl = release.html_url;
+      return `## ${tagName} - ${publishedAt} - ${changelogUrl} \n${release.body}`;
+    }).join('\n');
+    fs.writeFile(filePath, logData, { encoding: 'utf8' }, (err) => {
       if (err) {
         console.error(err);
-        return;
+      } else {
+        console.log(`Release log written to ${filePath}`);
       }
-      console.log(`Release notes for major version ${majorVersion} of ${packageName} written to file ${fileName}`);
     });
-  });
-}).on('error', (err) => {
-  console.error(err);
-});
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// const packageName = 'react';
+const filePath = `${repo}-${startVersion}-releases.md`;
+writeReleaseLog(repo, filePath);
