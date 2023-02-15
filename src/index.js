@@ -1,9 +1,9 @@
 const fetch = require('cross-fetch');
 const fs = require('fs');
 
-const owner = 'facebook';
-const repo = 'react';
-const startVersion = 'v18';
+const owner = 'umijs';
+const repo = 'umi';
+const startVersion = 'v3.5';
 
 async function getMajorReleases(packageName) {
   const url = `https://api.github.com/repos/${owner}/${repo}/releases?per_page=100`;
