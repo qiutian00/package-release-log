@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Get a package major release log",
   "main": "src/index.js",
+  "bin": {
+    "package-release-log": "bin/package-release-log.js"
+  },
   "scripts": {
     "start": "node src/index.js",
     "release": "npm publish --registry https://registry.npmjs.org/",
@@ -21,6 +24,7 @@
   "license": "MIT",
   "dependencies": {
     "cross-fetch": "^3.1.5",
-    "https": "^1.0.0"
+    "https": "^1.0.0",
+    "shelljs": "^0.8.5"
   }
 }
